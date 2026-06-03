@@ -2,7 +2,6 @@ import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import { useNavigate, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext.jsx';
-import { useTheme } from '../context/ThemeContext.jsx';
 import { errMsg } from '../api/axios.js';
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -16,7 +15,6 @@ export function GoogleAuthProvider({ children }) {
 /** "Sign in with Google" button — hidden until VITE_GOOGLE_CLIENT_ID is set. */
 export function GoogleButton() {
   const { googleLogin } = useAuth();
-  const { isDark } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -29,13 +27,22 @@ export function GoogleButton() {
         <span className="text-xs font-medium text-slate-400">or continue with</span>
         <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
       </div>
-      <div className="flex justify-center">
+      {/*
+        The GIS button renders inside an iframe. We pin the wrapper to the exact
+        button width and clip it to a pill so no white iframe background shows
+        around it (the "white patch"). `colorScheme: dark` keeps it dark-on-dark.
+      */}
+      <div
+        className="mx-auto w-[300px] max-w-full overflow-hidden rounded-full"
+        style={{ colorScheme: 'dark' }}
+      >
         <GoogleLogin
-          theme={isDark ? 'filled_black' : 'outline'}
+          theme="filled_black"
           shape="pill"
           size="large"
           text="continue_with"
-          width="320"
+          width="300"
+          logo_alignment="center"
           onSuccess={async (resp) => {
             try {
               await googleLogin(resp.credential);
