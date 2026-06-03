@@ -1,0 +1,101 @@
+# Render Blueprint — provisions the EduMentor AI backend (API) + frontend (static site).
+# In Render: New → Blueprint → connect this repo. Render reads this file and creates
+# both services. Values marked `sync: false` are NOT stored in git — Render will prompt
+# you to paste them during setup (and you can edit them later in each service's dashboard).
+#
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  # ──────────────────────────────────────────────────────────────────────
+  # Backend — Express + MongoDB API
+  # ──────────────────────────────────────────────────────────────────────
+  - type: web
+    name: edumentor-api
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      # Set this to your frontend's URL once it's live (CORS + refresh cookie).
+      # e.g. https://edumentor-web.onrender.com
+      - key: CLIENT_URL
+        sync: false
+
+      # MongoDB Atlas — use the mongodb+srv://... connection string.
+      - key: MONGODB_URI
+        sync: false
+
+      # JWT — Render generates strong random secrets for you.
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_EXPIRES
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES
+        value: 7d
+      - key: REFRESH_COOKIE_DAYS
+        value: "7"
+
+      # Google Gemini (AI quizzes + tutor)
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.0-flash
+
+      # Google OAuth (Sign in with Google)
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+
+      # Cloudinary (file uploads)
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: CLOUDINARY_FOLDER
+        value: edumentor
+
+      # Email (OTP password reset) — Gmail App Password
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "465"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: MAIL_FROM
+        value: EduMentor AI <shuryanshgupta8050@gmail.com>
+
+  # ──────────────────────────────────────────────────────────────────────
+  # Frontend — Vite SPA (static site, served from repo root)
+  # ──────────────────────────────────────────────────────────────────────
+  - type: web
+    name: edumentor-web
+    runtime: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    autoDeploy: true
+    # SPA fallback so client-side routes (e.g. /dashboard) don't 404.
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      # Point at the backend API once it's live, then add `/api`.
+      # e.g. https://edumentor-api.onrender.com/api
+      - key: VITE_API_URL
+        sync: false
+      # Public Google OAuth client ID (safe to expose in the browser bundle).
+      - key: VITE_GOOGLE_CLIENT_ID
+        value: 565065775971-ifdnsr2ea3omnila34rbndqsbp9q6kn6.apps.googleusercontent.com
